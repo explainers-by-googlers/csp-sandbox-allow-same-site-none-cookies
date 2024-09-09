@@ -1,5 +1,8 @@
 # Explainer for Allowing SameSite=None Cookies in Sandboxed Pages
 
+## Authors
+Anusha Muley\
+Dylan Cutler
 
 ## Participate
 - https://github.com/explainers-by-googlers/csp-sandbox-allow-same-site-none-cookies/issues
