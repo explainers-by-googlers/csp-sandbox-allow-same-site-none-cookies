@@ -1,177 +1,96 @@
-# Explainer for the TODO API
+# Explainer for Allowing SameSite=None Cookies in Sandboxed Pages
 
-**Instructions for the explainer author: Search for "todo" in this repository and update all the
-instances as appropriate. For the instances in `index.bs`, update the repository name, but you can
-leave the rest until you start the specification. Then delete the TODOs and this block of text.**
-
-This proposal is an early design sketch by [TODO: team] to describe the problem below and solicit
-feedback on the proposed solution. It has not been approved to ship in Chrome.
-
-TODO: Fill in the whole explainer template below using https://tag.w3.org/explainers/ as a
-reference. Look for [brackets].
-
-## Proponents
-
-- [Proponent team 1]
-- [Proponent team 2]
-- [etc.]
 
 ## Participate
-- https://github.com/explainers-by-googlers/[your-repository-name]/issues
-- [Discussion forum]
+- https://github.com/explainers-by-googlers/csp-sandbox-allow-same-site-none-cookies/issues
+- https://github.com/w3c/webappsec-csp/issues/664
 
-## Table of Contents [if the explainer is longer than one printed page]
-
+## Table of Contents 
 <!-- Update this table of contents by running `npx doctoc README.md` -->
 <!-- START doctoc generated TOC please keep comment here to allow auto update -->
 <!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
 
 - [Introduction](#introduction)
 - [Goals](#goals)
-- [Non-goals](#non-goals)
-- [User research](#user-research)
-- [Use cases](#use-cases)
-  - [Use case 1](#use-case-1)
-  - [Use case 2](#use-case-2)
-- [[Potential Solution]](#potential-solution)
-  - [How this solution would solve the use cases](#how-this-solution-would-solve-the-use-cases)
-    - [Use case 1](#use-case-1-1)
-    - [Use case 2](#use-case-2-1)
+  - [CSP Sandbox Value](#csp-sandbox-value)
+  - [Motivating scenario](#motivating-scenario)
 - [Detailed design discussion](#detailed-design-discussion)
-  - [[Tricky design choice #1]](#tricky-design-choice-1)
-  - [[Tricky design choice 2]](#tricky-design-choice-2)
+  - [Security and privacy considerations](#security-and-privacy-considerations)
 - [Considered alternatives](#considered-alternatives)
-  - [[Alternative 1]](#alternative-1)
-  - [[Alternative 2]](#alternative-2)
-- [Stakeholder Feedback / Opposition](#stakeholder-feedback--opposition)
-- [References & acknowledgements](#references--acknowledgements)
+    - [StorageAccess API](#storageaccess-api)
+- [References & Acknowledgements](#references--acknowledgements)
+  - [Links](#links)
+  - [Definitions](#definitions)
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
 
 ## Introduction
+In order to prevent malicious attacks from untrusted content, servers can include a [Content-Security-Policy](https://www.w3.org/TR/CSP3/#content-security-policy) HTTP header to `sandbox` a page. This policy restricts popups, plugins, and scripts, and additionally results in the browser treating the page as an [opaque origin](https://html.spec.whatwg.org/multipage/browsers.html#concept-origin-opaque). Because of these policies, requests originating from this page cannot include `SameSite=Strict/Lax` cookies. Only `SameSite=None` cookies can be sent, since all requests from sandboxed pages without the `allow-same-origin` value are considered cross-site.
 
-[The "executive summary" or "abstract".
-Explain in a few sentences what the goals of the project are,
-and a brief overview of how the solution works.
-This should be no more than 1-2 paragraphs.]
+However, when third-party cookies (3PCs) are blocked, all requests from these sandboxed pages will no longer even have their `SameSite=None` cookies, since privacy controls in some browsers consider all subresource requests from a frame with an opaque origin to be cross-site for 3PC blocking. 
+
+![Legacy Sandbox SameSite Cookies Behavior](before.png "")
+
+
+While an `allow-same-origin` sandbox value exists, this would expose the entire hosting origin’s cookie jar—`SameSite=Lax/Strict` cookies as well as `SameSite=None` cookies—while a website may have intentionally sandboxed an origin to prevent access to this storage. 
 
 ## Goals
+### CSP Sandbox Value
 
-[What is the **end-user need** which this project aims to address? Make this section short, and
-elaborate in the Use cases section.]
+We would like to introduce a method for servers to indicate to the browser that they wish a first-party sandboxed page to have access to its `SameSite=None` cookies using an API-based solution (such as an HTTP header). This preserves the current expected behavior and wouldn't pose an additional privacy concern because only cookie access from a first-party site would be allowed. 
 
-## Non-goals
+We propose introducing a new value to the Content-Security-Policy `sandbox` directive which can be added to a frame to opt-in to sending `SameSite=None` cookies in sandboxed contexts. 
 
-[If there are "adjacent" goals which may appear to be in scope but aren't,
-enumerate them here. This section may be fleshed out as your design progresses and you encounter necessary technical and other trade-offs.]
+`Content-Security-Policy: sandbox allow-same-site-none-cookies;`
 
-## User research
+To implement this, the page’s host URL (instead of the opaque URL) is used to add cookies to browser-side storage and attach cookies to outgoing subresource requests. 
 
-[If any user research has been conducted to inform your design choices,
-discuss the process and findings. User research should be more common than it is.]
+### Motivating scenario
 
-## Use cases
+Consider an example webpage at storage.example.com, where users can upload untrusted code and content. The site owners have sandboxed the untrusted content in order to block script execution. This also prevents these pages from accessing `SameSite` cookies, which could contain sensitive session and authentication information. However, storage.example.com uses `SameSite=None` cookies to access control content so that users can only display content they upload. 
 
-[Describe in detail what problems end-users are facing, which this project is trying to solve. A
-common mistake in this section is to take a web developer's or server operator's perspective, which
-makes reviewers worry that the proposal will violate [RFC 8890, The Internet is for End
-Users](https://www.rfc-editor.org/rfc/rfc8890).]
+When 3PCs are blocked, `SameSite=None` cookies are excluded from requests because they are treated as coming from a cross-site context. In this scenario, the owners cannot include the existing `allow-same-origin` value in storage.example.com’s CSP sandbox header as it would expose the `SameSite` cookie jar to untrusted web content. 
 
-### Use case 1
-
-### Use case 2
-
-<!-- In your initial explainer, you shouldn't be attached or appear attached to any of the potential
-solutions you describe below this. -->
-
-## [Potential Solution]
-
-[For each related element of the proposed solution - be it an additional JS method, a new object, a new element, a new concept etc., create a section which briefly describes it.]
-
-```js
-// Provide example code - not IDL - demonstrating the design of the feature.
-
-// If this API can be used on its own to address a user need,
-// link it back to one of the scenarios in the goals section.
-
-// If you need to show how to get the feature set up
-// (initialized, or using permissions, etc.), include that too.
-```
-
-[Where necessary, provide links to longer explanations of the relevant pre-existing concepts and API.
-If there is no suitable external documentation, you might like to provide supplementary information as an appendix in this document, and provide an internal link where appropriate.]
-
-[If this is already specced, link to the relevant section of the spec.]
-
-[If spec work is in progress, link to the PR or draft of the spec.]
-
-[If you have more potential solutions in mind, add ## Potential Solution 2, 3, etc. sections.]
-
-### How this solution would solve the use cases
-
-[If there are a suite of interacting APIs, show how they work together to solve the use cases described.]
-
-#### Use case 1
-
-[Description of the end-user scenario]
-
-```js
-// Sample code demonstrating how to use these APIs to address that scenario.
-```
-
-#### Use case 2
-
-[etc.]
+We would like to support a new CSP value in cases such as these where servers want to permit their own `SameSite=None` cookies in requests which are same-site to the top-level frame. storage.example.com could include the new value, `allow-same-site-none-cookies`, instructing the browser to only send `SameSite=None` cookies, restoring functionality without compromising security.
 
 ## Detailed design discussion
 
-### [Tricky design choice #1]
+### Security and privacy considerations
 
-[Talk through the tradeoffs in coming to the specific design point you want to make.]
+This feature continues using the opaque origin in other sandboxing contexts so requests will be considered cross-site and the document will not be able to access other content from the same origin, which aligns with the current `sandbox` directive’s [specification](https://html.spec.whatwg.org/multipage/browsers.html#sandboxed-origin-browsing-context-flag). Since requests are considered cross-site, the browser can leverage network restrictions which already filter out `SameSite=Strict/Lax` cookies from opaque contexts to only include the `SameSite=None` cookies.
 
-```js
-// Illustrated with example code.
-```
+Since this value will only permit these cookies in frames that are same-site with the sandboxed document, there is no privacy impact to users as the cookies are exclusively the first-party site's  
 
-[This may be an open question,
-in which case you should link to any active discussion threads.]
+Because this is opt-in behavior, developers can choose to allow this functionality in contexts where having `SameSite=None` cookies from the first-party site would not be a security concern. 
 
-### [Tricky design choice 2]
+This feature does not change the cookies accessible to subresources and, in contrast to the cookies allowed by the `allow-same-origin` value, this proposed value would restore legacy behavior by not including `SameSite=Lax/Strict` cookies and treating all requests as cross-site. 
 
-[etc.]
+![Proposed Sandbox SameSite Cookies Behavior](after.png "")
 
 ## Considered alternatives
 
-[This should include as many alternatives as you can,
-from high level architectural decisions down to alternative naming choices.]
+#### StorageAccess API
 
-### [Alternative 1]
+Another approach could be to implement this functionality behind the [StorageAccess API](https://github.com/privacycg/storage-access) so sandboxed pages could request storage access through client-side JS. However, sandboxed pages do not have script access by default. Adding this feature in the StorageAccess API would require the additional sandbox `allow-scripts` value to be set which partially limits the benefits of the sandboxed context. 
 
-[Describe an alternative which was considered,
-and why you decided against it.]
+Since the `sandbox` directive is part of the CSP, adding this feature there would make it easier for developers to incorporate regardless of other sandbox values and they could maintain access to the `SameSite=None` cookies without adding or modifying JS code. 
 
-### [Alternative 2]
 
-[etc.]
+## References & Acknowledgements
 
-## Stakeholder Feedback / Opposition
+### Links
 
-[Implementors and other stakeholders may already have publicly stated positions on this work. If you can, list them here with links to evidence as appropriate.]
+External Discussion: https://github.com/w3c/webappsec-csp/issues/664
+Current patch to re-enable functionality in Chromium through User Bypass: https://chromium-review.googlesource.com/c/chromium/src/+/5206483
 
-- [Implementor A] : Positive
-- [Stakeholder B] : No signals
-- [Implementor C] : Negative
+### Definitions 
 
-[If appropriate, explain the reasons given by other implementors for their concerns.]
-
-## References & acknowledgements
-
-[Your design will change and be informed by many people; acknowledge them in an ongoing way! It helps build community and, as we only get by through the contributions of many, is only fair.]
-
-[Unless you have a specific reason not to, these should be in alphabetical order.]
-
-Many thanks for valuable feedback and advice from:
-
-- [Person 1]
-- [Person 2]
-- [etc.]
+Fetch spec: [https://fetch.spec.whatwg.org/](https://fetch.spec.whatwg.org/)   
+HTTP State Management Mechanism (RFC6265): [https://httpwg.org/specs/rfc6265.html](https://httpwg.org/specs/rfc6265.html)   
+ITP: [https://webkit.org/blog/8613/intelligent-tracking-prevention-2-1/](https://webkit.org/blog/8613/intelligent-tracking-prevention-2-1/)   
+Opaque Origin: [https://html.spec.whatwg.org/multipage/browsers.html\#concept-origin-opaque](https://html.spec.whatwg.org/multipage/browsers.html#concept-origin-opaque)   
+SameSite=None Cookies: [https://web.dev/articles/samesite-cookies-explained](https://web.dev/articles/samesite-cookies-explained)   
+SameSite’s cross-site definition: [https://datatracker.ietf.org/doc/html/draft-ietf-httpbis-rfc6265bis-14\#same-site-requests](https://datatracker.ietf.org/doc/html/draft-ietf-httpbis-rfc6265bis-14#same-site-requests)   
+Sandbox CSP Directive: [https://www.w3.org/TR/CSP3/\#directive-sandbox](https://www.w3.org/TR/CSP3/#directive-sandbox)   
+Sandboxing Flag Set: [https://html.spec.whatwg.org/multipage/browsers.html\#sandboxing-flag-set](https://html.spec.whatwg.org/multipage/browsers.html#sandboxing-flag-set)   
+Third-Party Cookie Changes: [https://developers.google.com/privacy-sandbox/3pcd/prepare/overview](https://developers.google.com/privacy-sandbox/3pcd/prepare/overview) 
