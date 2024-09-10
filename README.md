@@ -7,6 +7,7 @@ Dylan Cutler
 ## Participate
 - https://github.com/explainers-by-googlers/csp-sandbox-allow-same-site-none-cookies/issues
 - https://github.com/w3c/webappsec-csp/issues/664
+- https://github.com/w3c/webappsec/issues/654#issuecomment-2298917736
 
 ## Table of Contents 
 <!-- Update this table of contents by running `npx doctoc README.md` -->
@@ -83,7 +84,7 @@ Since the `sandbox` directive is part of the CSP, adding this feature there woul
 
 ### Links
 
-External Discussion: https://github.com/w3c/webappsec-csp/issues/664
+External Discussion: https://github.com/w3c/webappsec-csp/issues/664 \
 Current patch to re-enable functionality in Chromium through User Bypass: https://chromium-review.googlesource.com/c/chromium/src/+/5206483
 
 ### Definitions 
