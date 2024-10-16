@@ -3,8 +3,8 @@
 
 > 01.  What information does this feature expose, and for what purposes?
 
-This feature allows SameSite=None cookies to be included in requests to the first party when third-party cookie (3PC) blocking is active. This information is currently available without 3PC Blocking. 
-Since this is an opt-in feature the server can decide if the sandbox allow-same-site-none-cookies value would expose information to untrusted contexts. 
+This feature allows `SameSite=None` cookies to be included in requests to the first party when third-party cookie (3PC) blocking is active. This information is currently available without 3PC Blocking. 
+Since this is an opt-in feature the server can decide if the `sandbox` `allow-same-site-none-cookies` value would expose information to untrusted contexts. 
 > 02.  Do features in your specification expose the minimum amount of information
 >      necessary to implement the intended functionality?
 
@@ -13,7 +13,7 @@ Yes
 >      personally-identifiable information (PII), or information derived from
 >      either?
 
-The SameSite=None cookies exposed could be part of authentication/session information and derived from PII but these would only be exposed to the first party.  
+The `SameSite=None` cookies exposed could be part of authentication/session information and derived from PII but these would only be exposed to the first party.  
 > 04.  How do the features in your specification deal with sensitive information?
 
 N/A
@@ -54,7 +54,7 @@ N/A
 > 14.  How does this specification distinguish between behavior in first-party and
 >      third-party contexts?
 
-The SameSite=None cookies we are exposing are only visible to the first party of sandboxed origins. They will continue to be filtered out of third-party contexts with 3PC blocking
+The `SameSite=None` cookies we are exposing are only visible to the first party of sandboxed origins. They will continue to be filtered out of third-party contexts with 3PC blocking
 > 15.  How do the features in this specification work in the context of a browser’s
 >      Private Browsing or Incognito mode?
 
@@ -71,11 +71,11 @@ No, this restores default behavior while maintaining the existing security prote
 >      (instead of getting destroyed) after navigation, and potentially gets reused
 >      on future navigations back to the document?
 
-The CSP sandbox directive (including this value) is active for the lifetime of a document including if the document was kept alive the BFCache. 
-Since the server would have had to send the allow-same-site-none-cookies value in a previous response to include these cookies and they are only being sent to the first-party site, this doesn't seem to be a large concern. 
+The CSP `sandbox` directive (including this value) is active for the lifetime of a document including if the document was kept alive the BFCache. 
+Since the server would have had to send the `allow-same-site-none-cookies` value in a previous response to include these cookies and they are only being sent to the first-party site, this doesn't seem to be a large concern. 
 > 19.  What happens when a document that uses your feature gets disconnected?
 
-The Content-Security-Policy is delivered on the initial document load so the value would still remain in effect as the CSP is enforced by the browser’s security context. The cookies are stored in the browser and included on requests so a disconnected document wouldn't have access to the cookie store. 
+The `Content-Security-Policy` is delivered on the initial document load so the value would still remain in effect as the CSP is enforced by the browser’s security context. The cookies are stored in the browser and included on requests so a disconnected document wouldn't have access to the cookie store. 
 > 20.  Does your feature allow sites to learn about the users use of assistive technology?
 
 No
