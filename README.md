@@ -55,7 +55,7 @@ Consider an example webpage at storage.example.com, where users can upload untru
 
 When 3PCs are blocked, `SameSite=None` cookies are excluded from requests because they are treated as coming from a cross-site context. In this scenario, the owners cannot include the existing `allow-same-origin` value in storage.example.com’s CSP sandbox header as it would expose the `SameSite` cookie jar to untrusted web content. 
 
-We would like to support a new CSP value in cases such as these where servers want to permit their own `SameSite=None` cookies in requests which are same-site to the top-level frame. storage.example.com could include the new value, `allow-same-site-none-cookies`, instructing the browser to only send `SameSite=None` cookies, restoring functionality without compromising security.
+We would like to support a new CSP value in cases such as these where servers want to permit their own `SameSite=None` cookies in requests which are same-site to all ancestor frames up to the top-level frame. storage.example.com could include the new value, `allow-same-site-none-cookies`, instructing the browser to only send `SameSite=None` cookies, restoring functionality without compromising security.
 
 ## Detailed design discussion
 
@@ -63,7 +63,7 @@ We would like to support a new CSP value in cases such as these where servers wa
 
 This feature continues using the opaque origin in other sandboxing contexts so requests will be considered cross-site and the document will not be able to access other content from the same origin, which aligns with the current `sandbox` directive’s [specification](https://html.spec.whatwg.org/multipage/browsers.html#sandboxed-origin-browsing-context-flag). Since requests are considered cross-site, the browser can leverage network restrictions which already filter out `SameSite=Strict/Lax` cookies from opaque contexts to only include the `SameSite=None` cookies.
 
-Since this value will only permit these cookies in frames that are same-site with the sandboxed document, there is no privacy impact to users as the cookies are exclusively the first-party site's  
+Since this value will only permit cookies that are same-site with the sandboxed document in frames without cross-site ancestors, there is no privacy impact to users — the cookies are exclusively the first-party site's and are inaccessible to malicious embeds.
 
 Because this is opt-in behavior, developers can choose to allow this functionality in contexts where having `SameSite=None` cookies from the first-party site would not be a security concern. 
 
